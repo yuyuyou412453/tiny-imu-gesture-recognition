@@ -59,3 +59,44 @@ Windows PowerShell 下执行：
 此后通过 pip 安装的软件包都会安装到当前项目的虚拟环境中。
 
 ### 2.4 安装所需 Python 库
+
+项目第一阶段主要进行 IMU 数据读取、数值计算、信号处理与可视化，因此先安装以下 Python 库：
+
+```text
+pip install numpy pandas matplotlib scipy
+```
+
+各库的主要用途如下：
+
+| 库 | 主要用途 |
+| --- | --- |
+| NumPy | 数组、矩阵以及数值计算 |
+| Pandas | CSV 等结构化数据的读取与处理 |
+| Matplotlib | 绘制 IMU 时序波形、频谱和实验结果 |
+| SciPy | 滤波、FFT 等信号处理操作 |
+
+后续进入传统机器学习、1D CNN、模型导出和端侧通信阶段时，再根据实际需要继续安装：
+
+- `scikit-learn`
+- `PyTorch`
+- `ONNX`
+- `ONNX Runtime`
+- `PySerial`
+
+### 2.5 保存项目依赖
+
+为了记录当前项目使用的软件包及其版本，执行：
+
+```text
+pip freeze > requirements.txt
+```
+
+该命令会在项目根目录生成`requirements.txt`，其中记录当前虚拟环境中已经安装的 Python 软件包及对应版本。
+
+以后如果需要在新的 Python 环境中恢复项目依赖，可以执行：
+
+```text
+pip install -r requirements.txt
+```
+
+从而按照 requirements.txt 中记录的版本重新安装所需的软件包。
