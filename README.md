@@ -1,8 +1,6 @@
 # tiny-imu-gesture-recognition
 基于六轴 IMU 时序信号的轻量手势识别与端侧部署
 
----
-
 ## 1.项目目标
 
 - 读取六轴 IMU 数据
@@ -13,8 +11,6 @@
 - 进行模型量化
 - 完成实时推理
 - 部署到 MCU / 边缘端
-
----
 
 ## 2.建立 Python 虚拟环境并配置项目依赖
 
@@ -27,4 +23,3 @@
 ```text
 D:\GitHub\tiny-imu-gesture-recognition
 
-首先进入项目目录：
