@@ -100,3 +100,36 @@ pip install -r requirements.txt
 ```
 
 从而按照 requirements.txt 中记录的版本重新安装所需的软件包。
+
+## 3. 项目框架
+
+```text
+tiny-imu-gesture-recognition/
+├── data/
+│   └── raw/
+├── src/
+│   ├── preprocessing/
+│   ├── training/
+│   ├── inference/
+│   └── deployment/
+├── assets/
+├── docs/
+├── requirements.txt
+├── .gitignore
+└── README.md
+```
+
+| 路径 | 主要用途 |
+| --- | --- |
+| `data/` | 保存项目使用的数据 |
+| `data/raw/` | 保存未经处理的原始 IMU 数据 |
+| `src/` | 保存项目主要源代码 |
+| `src/preprocessing/` | 数据读取、滤波、归一化、滑动窗口和特征处理 |
+| `src/training/` | 传统机器学习模型及 1D CNN 的训练代码 |
+| `src/inference/` | 模型加载、测试和实时推理代码 |
+| `src/deployment/` | 模型导出、量化以及后续端侧部署相关代码 |
+| `assets/` | 保存 README 中使用的波形图、频谱图、实验结果图等 |
+| `docs/` | 保存补充学习笔记、实验记录和项目文档 |
+| `requirements.txt` | 记录 Python 环境中的项目依赖及版本 |
+| `.gitignore` | 指定 Git 不需要跟踪的本地文件和目录 |
+| `README.md` | 记录项目目标、实现过程、学习笔记和实验结果 |
