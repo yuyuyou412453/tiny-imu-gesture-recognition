@@ -1,4 +1,4 @@
-# tiny-imu-gesture-recognition
+<img width="254" height="92" alt="image" src="https://github.com/user-attachments/assets/f3d1bbc1-3d60-4bf7-8a90-1fc91d00eed7" /># tiny-imu-gesture-recognition
 基于六轴 IMU 时序信号的轻量手势识别与端侧部署
 
 ## 1. 项目目标
@@ -22,4 +22,21 @@
  
 ```text
 D:\GitHub\tiny-imu-gesture-recognition
+```
+
+首先进入项目目录：
+
+```text
+cd D:\GitHub\tiny-imu-gesture-recognition
+```
+
+### 2.2 创建虚拟环境
+
+执行：
+
+```text
+python -m venv .venv
+```
+其中：
+
 
