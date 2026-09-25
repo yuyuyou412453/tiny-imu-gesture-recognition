@@ -58,9 +58,9 @@ tiny-imu-gesture-recognition/
 ### 2.2 数据链路
 
 ```text
-手持 MPU6050 完成指定手势
+手持 MPU6500 完成指定手势
         ↓
-MPU6050 采集 ax、ay、az、gx、gy、gz 六轴数据
+MPU6500 采集 ax、ay、az、gx、gy、gz 六轴数据
         ↓ I²C
 ESP32 开发板读取六轴数据
         ↓ USB 串口
@@ -78,7 +78,7 @@ Python 接收并保存为带手势标签的 CSV 数据
         ↓
 部署至 ESP32
         ↓
-MPU6050 实时采集
+MPU6500 实时采集
         ↓
 ESP32 端侧推理
         ↓
@@ -89,7 +89,7 @@ ESP32 端侧推理
 
 ESP32 端主要负责：
 
-- 初始化 MPU6050
+- 初始化 MPU6500
 - 通过 I²C 读取六轴数据
 - 按固定采样频率采集数据
 - 通过 USB 串口向 PC 发送数据
@@ -104,7 +104,7 @@ PC 端 Python 主要负责：
 
 ### 3.1 ESP32 开发环境
 
-ESP32 负责通过 I²C 读取 MPU6050 数据，并通过 USB 串口发送至 PC，因此除了 PC 端的 Python 环境外，还需要配置 ESP32 固件开发环境。
+ESP32 负责通过 I²C 读取 MPU6500 数据，并通过 USB 串口发送至 PC，因此除了 PC 端的 Python 环境外，还需要配置 ESP32 固件开发环境。
 
 本项目使用 Arduino IDE 编写、编译并烧录 ESP32 固件。
 
@@ -201,7 +201,7 @@ pip install -r requirements.txt
 
 ### 4.2 六轴数据的含义
 
-MPU6050 输出三轴加速度和三轴角速度，共六个主要运动量：
+MPU6500 输出三轴加速度和三轴角速度，共六个主要运动量：
 
 | 数据 | 含义 | 典型单位 |
 | --- | --- | --- |
@@ -217,7 +217,7 @@ MPU6050 输出三轴加速度和三轴角速度，共六个主要运动量：
 - `ax`、`ay`、`az` 主要反映传感器的平移运动、振动以及重力在各坐标轴方向上的分量。
 - `gx`、`gy`、`gz` 主要反映传感器绕三个坐标轴旋转时的角速度变化。
 
-当 MPU6050 静止放置时，加速度计仍会受到重力影响，因此三个加速度轴中通常会有一个方向接近 `1 g`，具体取决于传感器当前的放置方向。
+当 MPU6500 静止放置时，加速度计仍会受到重力影响，因此三个加速度轴中通常会有一个方向接近 `1 g`，具体取决于传感器当前的放置方向。
 
 在手势执行过程中，六个通道会随时间连续变化，因此一次手势可以表示为一段六通道时序数据：
 
@@ -231,18 +231,18 @@ tn → axn, ayn, azn, gxn, gyn, gzn
 
 后续将利用这六路时序信号之间的变化规律区分不同手势。
 
-### 4.3 MPU6050 与 ESP32 硬件连接
+### 4.3 MPU6500 与 ESP32 硬件连接
 
-| MPU6050 | ESP32 开发板 | 功能 |
-| --- | --- | --- | --- |
+| MPU6500 | ESP32 开发板 | 功能 |
+| --- | --- | --- |
 | `VCC` | `3V3` | 模块供电 |
 | `GND` | `GND` | 公共地 |
 | `SDA` | `D21` | I²C 数据线 |
 | `SCL` | `D22` | I²C 时钟线 |
 
-### 4.4 ESP32 读取 MPU6050 数据
+### 4.4 ESP32 读取 MPU6500 数据
 
-在读取 MPU6050 数据之前，需要先在 Arduino IDE 中配置 ESP32 开发环境，并安装 MPU6050 对应的驱动库。
+在读取 MPU6500 数据之前，需要先在 Arduino IDE 中配置 ESP32 开发环境。
 
 首先在 Arduino IDE 的开发板管理器 `Boards Manager` 中搜索：
 
@@ -268,36 +268,11 @@ esp32 by Espressif Systems
 ESP32 Dev Module
 ```
 
-然后在 Arduino IDE 的库管理器 `Library Manager` 中搜索：
+MPU6500 的寄存器读写通过 Arduino 自带的 Wire 库完成，不额外依赖第三方驱动库。
 
-```text
-Adafruit MPU6050
-```
+#### 4.4.1 检测 MPU6500 的 I²C 地址
 
-安装：
-
-```text
-Adafruit MPU6050 by Adafruit
-```
-
-本项目当前使用的 Adafruit MPU6050 版本为：
-
-```text
-2.2.9
-```
-
-安装过程中如果提示安装依赖库，则一并安装，例如：
-
-```text
-Adafruit BusIO
-Adafruit Unified Sensor
-```
-
-完成 ESP32 开发板支持包和 MPU6050 库的安装后，即可开始通过 I²C 读取 MPU6050 数据。
-
-#### 4.4.1 检测 MPU6050 的 I²C 地址
-
-首先使用 I²C 扫描程序确认 ESP32 能够正常检测到 MPU6050。
+首先使用 I²C 扫描程序确认 ESP32 能够正常检测到 MPU6500。
 
 在 Arduino IDE 中新建程序：
 
@@ -361,7 +336,58 @@ Scanning...
 I2C device found at address 0x68
 ```
 
-MPU6050 默认 I²C 地址通常为 `0x68`。检测到该地址说明 ESP32 与 MPU6050 的基本通信链路已经建立。
+#### 4.4.2 确认 IMU 芯片型号
+
+I²C 扫描只能确认地址 `0x68` 上存在设备，因此进一步读取 `WHO_AM_I` 寄存器确认芯片型号：
+
+```cpp
+#include <Wire.h>                  // I²C 通信库
+
+#define MPU_ADDR 0x68              // IMU 的 I²C 地址
+#define WHO_AM_I 0x75              // WHO_AM_I 芯片身份寄存器地址
+
+void setup()
+{
+    Serial.begin(115200);          // 初始化串口，波特率设置为 115200
+
+    Wire.begin(21, 22);            // 初始化 I²C：SDA = GPIO21，SCL = GPIO22
+
+    delay(1000);                   // 等待传感器上电稳定
+
+    Wire.beginTransmission(MPU_ADDR);  // 开始与地址为 0x68 的设备通信
+
+    Wire.write(WHO_AM_I);          // 指定要读取的 WHO_AM_I 寄存器
+
+    Wire.endTransmission(false);   // 不释放 I²C 总线，准备继续读取数据
+
+    Wire.requestFrom(MPU_ADDR, 1); // 从设备读取 1 个字节
+
+    if (Wire.available())          // 判断是否成功接收到数据
+    {
+        byte whoAmI = Wire.read(); // 读取 WHO_AM_I 寄存器返回值
+
+        Serial.print("WHO_AM_I = 0x");  // 输出提示信息
+
+        Serial.println(whoAmI, HEX);    // 以十六进制形式输出芯片身份值
+    }
+    else
+    {
+        Serial.println("Failed to read WHO_AM_I.");  // 读取失败时输出提示
+    }
+}
+
+void loop()
+{
+}
+```
+
+实际读取结果为：
+
+```text
+WHO_AM_I = 0x70
+```
+
+因此本项目使用的模块实际识别为 MPU6500 或 MPU6500 兼容芯片，后续按照 MPU6500 寄存器定义进行数据读取。
 
 ### 4.5 串口数据格式
 
@@ -383,84 +409,144 @@ timestamp,ax,ay,az,gx,gy,gz
 | `gy` | 绕 Y 轴角速度 | °/s |
 | `gz` | 绕 Z 轴角速度 | °/s |
 
-相邻两组数据的时间戳间隔约为 `20 ms`，对应约 `50 Hz` 的采样频率。
+本项目以约 `50 Hz` 为目标采样频率。程序通过 MPU6500 的采样率分频寄存器配置传感器内部输出频率，并按照约 `20 ms` 的周期读取六轴数据。由于 I²C 读取、数据处理及串口发送本身存在一定耗时，实际串口输出间隔可能略大于 `20 ms`。
 
-ESP32 使用以下程序读取 MPU6050 六轴数据，并按照上述格式通过串口输出：
+ESP32 使用以下程序读取 MPU6500 六轴数据，并按照上述格式通过串口输出：
 
 ```cpp
-#include <Wire.h>                  // I²C 通信库
-#include <Adafruit_MPU6050.h>      // MPU6050 驱动库
-#include <Adafruit_Sensor.h>       // Adafruit 统一传感器接口库
+#include <Wire.h>                              // 引入 Wire 库，用于 ESP32 与 MPU6500 之间进行 I²C 通信
 
-Adafruit_MPU6050 mpu;              // 创建 MPU6050 对象
+#define MPU6500_ADDR 0x68                      // 定义 MPU6500 的 I²C 从机地址为 0x68
 
-void setup()
-{
-    Serial.begin(115200);          // 初始化串口，波特率设置为 115200
+#define SMPLRT_DIV 0x19                        // 定义采样率分频寄存器地址为 0x19
+#define CONFIG 0x1A                            // 定义陀螺仪数字低通滤波配置寄存器地址为 0x1A
+#define GYRO_CONFIG 0x1B                       // 定义陀螺仪量程配置寄存器地址为 0x1B
+#define ACCEL_CONFIG 0x1C                      // 定义加速度计量程配置寄存器地址为 0x1C
+#define ACCEL_CONFIG2 0x1D                     // 定义加速度计数字低通滤波配置寄存器地址为 0x1D
+#define ACCEL_XOUT_H 0x3B                      // 定义加速度计 X 轴高 8 位数据寄存器地址为 0x3B
+#define PWR_MGMT_1 0x6B                        // 定义电源管理寄存器地址为 0x6B
+#define WHO_AM_I 0x75                          // 定义芯片身份识别寄存器地址为 0x75
 
-    Wire.begin(21, 22);            // 初始化 I²C：SDA = GPIO21，SCL = GPIO22
+void writeRegister(byte reg, byte value)       // 定义寄存器写入函数，reg 为寄存器地址，value 为写入的数据
+{                                              // writeRegister() 函数开始
+    Wire.beginTransmission(MPU6500_ADDR);      // 开始与 I²C 地址为 0x68 的 MPU6500 通信
+    Wire.write(reg);                           // 将需要写入的目标寄存器地址发送给 MPU6500
+    Wire.write(value);                         // 将需要写入目标寄存器的配置值发送给 MPU6500
+    Wire.endTransmission();                    // 结束本次 I²C 写操作并释放总线
+}                                              // writeRegister() 函数结束
 
-    delay(1000);                   // 等待 MPU6050 上电稳定
+byte readRegister(byte reg)                    // 定义寄存器读取函数，读取指定寄存器中的 1 个字节
+{                                              // readRegister() 函数开始
+    Wire.beginTransmission(MPU6500_ADDR);      // 开始与 MPU6500 通信
+    Wire.write(reg);                           // 指定需要读取的寄存器地址
+    Wire.endTransmission(false);               // 结束写地址阶段，但不释放 I²C 总线，准备继续读取
+    Wire.requestFrom(MPU6500_ADDR, 1);         // 向 MPU6500 请求读取 1 个字节的数据
 
-    if (!mpu.begin(0x68, &Wire))   // 尝试连接地址为 0x68 的 MPU6050
-    {
-        Serial.println("Failed to find MPU6050.");  // 输出 MPU6050 初始化失败提示
+    if (Wire.available())                      // 判断 I²C 接收缓冲区中是否已经存在可读取的数据
+    {                                          // 如果存在数据，则进入该代码块
+        return Wire.read();                    // 从 I²C 缓冲区读取 1 个字节并返回
+    }                                          // if 判断结束
 
-        while (1)                  // 如果初始化失败，则停止程序继续运行
-        {
-            delay(10);             // 延时 10 ms
-        }
-    }
+    return 0xFF;                               // 如果读取失败，则返回 0xFF 作为错误标志
+}                                              // readRegister() 函数结束
 
-    mpu.setAccelerometerRange(MPU6050_RANGE_4_G);  // 加速度量程设置为 ±4 g
+void setup()                                   // setup() 在 ESP32 上电或复位后只执行一次
+{                                              // setup() 函数开始
+    Serial.begin(115200);                      // 初始化串口通信，并将波特率设置为 115200
 
-    mpu.setGyroRange(MPU6050_RANGE_500_DEG);       // 陀螺仪量程设置为 ±500 °/s
+    Wire.begin(21, 22);                        // 初始化 I²C，总线 SDA 使用 GPIO21，SCL 使用 GPIO22
 
-    mpu.setFilterBandwidth(MPU6050_BAND_21_HZ);    // 数字低通滤波带宽设置为 21 Hz
+    delay(1000);                               // 延时 1000 ms，等待 MPU6500 上电并稳定
 
-    delay(1000);                    // 等待传感器稳定
-}
+    byte whoAmI = readRegister(WHO_AM_I);      // 读取 WHO_AM_I 寄存器，用于确认传感器芯片身份
 
-void loop()
-{
-    sensors_event_t a;              // 保存加速度计数据
-    sensors_event_t g;              // 保存陀螺仪数据
-    sensors_event_t temp;           // 保存温度数据
+    Serial.print("WHO_AM_I = 0x");             // 在串口中输出 WHO_AM_I 提示信息
+    Serial.println(whoAmI, HEX);               // 将读取到的芯片身份值以十六进制形式输出并换行
 
-    mpu.getEvent(&a, &g, &temp);    // 获取当前加速度、角速度和温度数据
+    if (whoAmI != 0x70)                        // 判断芯片身份值是否为 MPU6500 对应的 0x70
+    {                                          // 如果身份值不是 0x70，则进入错误处理
+        Serial.println("MPU6500 identification failed."); // 在串口中输出 MPU6500 身份识别失败提示
 
-    unsigned long timestamp = millis();  // 获取 ESP32 启动后的时间，单位为 ms
+        while (1)                              // 进入无限循环，使程序停止继续执行
+        {                                      // while 循环开始
+            delay(10);                         // 每次循环延时 10 ms，避免高速空循环
+        }                                      // while 循环结束
+    }                                          // 芯片身份判断结束
 
-    float ax = a.acceleration.x / 9.80665;   // X 轴加速度：m/s² 转换为 g
-    float ay = a.acceleration.y / 9.80665;   // Y 轴加速度：m/s² 转换为 g
-    float az = a.acceleration.z / 9.80665;   // Z 轴加速度：m/s² 转换为 g
+    writeRegister(PWR_MGMT_1, 0x01);           // 向电源管理寄存器写入 0x01，唤醒 MPU6500 并选择时钟源
 
-    float gx = g.gyro.x * 180.0 / PI;        // X 轴角速度：rad/s 转换为 °/s
-    float gy = g.gyro.y * 180.0 / PI;        // Y 轴角速度：rad/s 转换为 °/s
-    float gz = g.gyro.z * 180.0 / PI;        // Z 轴角速度：rad/s 转换为 °/s
+    delay(100);                                // 延时 100 ms，等待 MPU6500 完成唤醒
 
-    Serial.print(timestamp);         // 输出时间戳
-    Serial.print(",");               // 输出分隔符
+    writeRegister(CONFIG, 0x04);               // 配置陀螺仪数字低通滤波器，带宽约为 20 Hz
 
-    Serial.print(ax, 4);             // 输出 X 轴加速度，保留 4 位小数
-    Serial.print(",");               // 输出分隔符
+    writeRegister(ACCEL_CONFIG2, 0x04);        // 配置加速度计数字低通滤波器，带宽约为 20 Hz
 
-    Serial.print(ay, 4);             // 输出 Y 轴加速度，保留 4 位小数
-    Serial.print(",");               // 输出分隔符
+    writeRegister(GYRO_CONFIG, 0x08);          // 设置陀螺仪量程为 ±500 °/s
 
-    Serial.print(az, 4);             // 输出 Z 轴加速度，保留 4 位小数
-    Serial.print(",");               // 输出分隔符
+    writeRegister(ACCEL_CONFIG, 0x08);         // 设置加速度计量程为 ±4 g
 
-    Serial.print(gx, 4);             // 输出 X 轴角速度，保留 4 位小数
-    Serial.print(",");               // 输出分隔符
+    writeRegister(SMPLRT_DIV, 19);             // 设置采样率分频值，使传感器内部输出频率约为 50 Hz
 
-    Serial.print(gy, 4);             // 输出 Y 轴角速度，保留 4 位小数
-    Serial.print(",");               // 输出分隔符
+    Serial.println("MPU6500 initialized successfully."); // 在串口中输出 MPU6500 初始化成功提示
 
-    Serial.println(gz, 4);           // 输出 Z 轴角速度并换行
+    delay(1000);                               // 延时 1000 ms，等待传感器输出数据稳定
+}                                              // setup() 函数结束
 
-    delay(20);                       // 约 50 Hz 采样
-}
+void loop()                                    // loop() 在 ESP32 运行过程中不断循环执行
+{                                              // loop() 函数开始
+    Wire.beginTransmission(MPU6500_ADDR);      // 开始与 MPU6500 进行 I²C 通信
+
+    Wire.write(ACCEL_XOUT_H);                  // 指定从 ACCEL_XOUT_H 寄存器开始连续读取传感器数据
+
+    Wire.endTransmission(false);               // 不释放 I²C 总线，准备继续执行连续读取
+
+    Wire.requestFrom(MPU6500_ADDR, 14);        // 连续请求读取 14 个字节的加速度、温度和陀螺仪原始数据
+
+    if (Wire.available() == 14)                // 判断是否完整接收到 14 个字节的数据
+    {                                          // 如果接收到完整数据，则进入数据解析过程
+        int16_t rawAx = (Wire.read() << 8) | Wire.read(); // 读取 X 轴加速度高低两个字节并合成为 16 位有符号数据
+        int16_t rawAy = (Wire.read() << 8) | Wire.read(); // 读取 Y 轴加速度高低两个字节并合成为 16 位有符号数据
+        int16_t rawAz = (Wire.read() << 8) | Wire.read(); // 读取 Z 轴加速度高低两个字节并合成为 16 位有符号数据
+
+        int16_t rawTemp = (Wire.read() << 8) | Wire.read(); // 读取温度高低两个字节并合成为 16 位原始温度数据
+
+        int16_t rawGx = (Wire.read() << 8) | Wire.read(); // 读取 X 轴陀螺仪高低两个字节并合成为 16 位有符号数据
+        int16_t rawGy = (Wire.read() << 8) | Wire.read(); // 读取 Y 轴陀螺仪高低两个字节并合成为 16 位有符号数据
+        int16_t rawGz = (Wire.read() << 8) | Wire.read(); // 读取 Z 轴陀螺仪高低两个字节并合成为 16 位有符号数据
+
+        float ax = rawAx / 8192.0;              // ±4 g 量程下以 8192 LSB/g 将 X 轴原始数据转换为 g
+        float ay = rawAy / 8192.0;              // ±4 g 量程下以 8192 LSB/g 将 Y 轴原始数据转换为 g
+        float az = rawAz / 8192.0;              // ±4 g 量程下以 8192 LSB/g 将 Z 轴原始数据转换为 g
+
+        float gx = rawGx / 65.5;                // ±500 °/s 量程下以 65.5 LSB/(°/s) 将 X 轴原始数据转换为 °/s
+        float gy = rawGy / 65.5;                // ±500 °/s 量程下以 65.5 LSB/(°/s) 将 Y 轴原始数据转换为 °/s
+        float gz = rawGz / 65.5;                // ±500 °/s 量程下以 65.5 LSB/(°/s) 将 Z 轴原始数据转换为 °/s
+
+        unsigned long timestamp = millis();     // 获取 ESP32 启动至当前时刻经过的时间，单位为 ms
+
+        Serial.print(timestamp);                // 通过串口输出当前时间戳
+        Serial.print(",");                      // 输出逗号，用于分隔时间戳和 X 轴加速度
+
+        Serial.print(ax, 4);                    // 输出 X 轴加速度，并保留 4 位小数
+        Serial.print(",");                      // 输出逗号，用于分隔不同数据字段
+
+        Serial.print(ay, 4);                    // 输出 Y 轴加速度，并保留 4 位小数
+        Serial.print(",");                      // 输出逗号，用于分隔不同数据字段
+
+        Serial.print(az, 4);                    // 输出 Z 轴加速度，并保留 4 位小数
+        Serial.print(",");                      // 输出逗号，用于分隔不同数据字段
+
+        Serial.print(gx, 4);                    // 输出 X 轴角速度，并保留 4 位小数
+        Serial.print(",");                      // 输出逗号，用于分隔不同数据字段
+
+        Serial.print(gy, 4);                    // 输出 Y 轴角速度，并保留 4 位小数
+        Serial.print(",");                      // 输出逗号，用于分隔不同数据字段
+
+        Serial.println(gz, 4);                  // 输出 Z 轴角速度，保留 4 位小数并在本组数据结束后换行
+    }                                          // 六轴数据读取与输出结束
+
+    delay(20);                                 // 延时约 20 ms，再进行下一轮数据读取，使采样频率接近 50 Hz
+}                                              // loop() 函数结束
 ```
 
 将程序烧录到 ESP32 后，在串口监视器中可以连续观察到类似：
