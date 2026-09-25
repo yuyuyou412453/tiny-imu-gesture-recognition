@@ -11,96 +11,9 @@
 - 完成实时推理
 - 部署到 MCU / 边缘端
 
-## 2. 建立 Python 虚拟环境并配置项目依赖
+## 2. 项目框架与数据链路
 
-### 2.1 为什么使用虚拟环境
-
-不同 Python 项目可能依赖不同版本的软件包，如果将所有依赖都直接安装到系统 Python 中，随着项目数量的增加，可能出现版本冲突。因此为不同的项目创建独属于该项目的 Python 虚拟环境，使项目依赖相互隔离。
-
-当前项目的本地路径：
-
-```text
-D:\GitHub\tiny-imu-gesture-recognition
-```
-
-首先进入项目目录：
-
-```text
-cd D:\GitHub\tiny-imu-gesture-recognition
-```
-
-### 2.2 创建虚拟环境
-
-执行：
-
-```text
-python -m venv .venv
-```
-
-其中：
-
-- python：调用当前 Python 解释器
-- -m venv：运行 Python 自带的 venv 模块
-- .venv：虚拟环境目录名称
-
-执行后，项目根目录中会生成 `.venv/`，该目录保存当前项目独立的 Python 解释器和第三方依赖。
-
-### 2.3 激活虚拟环境
-
-Windows PowerShell 下执行：
-
-```text
-.\.venv\Scripts\Activate.ps1
-```
-
-激活成功后，终端前通常会出现 `(.venv)`，此后通过 pip 安装的软件包都会安装到当前项目的虚拟环境中。
-
-### 2.4 安装所需 Python 库
-
-项目第一阶段主要进行 IMU 数据读取、数值计算、信号处理与可视化，因此先安装以下 Python 库：
-
-```text
-pip install numpy pandas matplotlib scipy pyserial
-```
-
-各库的主要用途如下：
-
-| 库 | 主要用途 |
-| --- | --- |
-| NumPy | 数组、矩阵以及数值计算 |
-| Pandas | CSV 等结构化数据的读取与处理 |
-| Matplotlib | 绘制 IMU 时序波形、频谱和实验结果 |
-| SciPy | 滤波、FFT 等信号处理操作 |
-| PySerial | 接收 ESP32 通过串口发送的 IMU 数据 |
-
-后续进入传统机器学习、1D CNN、模型导出和端侧通信阶段时，再根据实际需要继续安装：
-
-- `scikit-learn`
-- `PyTorch`
-- `ONNX`
-- `ONNX Runtime`
-
-### 2.5 保存项目依赖
-
-为了记录当前项目使用的软件包及其版本，执行：
-
-```text
-pip freeze > requirements.txt
-```
-
-该命令会在项目根目录生成 `requirements.txt`，其中记录当前虚拟环境中已经安装的 Python 软件包及对应版本。
-
-以后如果需要在新的 Python 环境中恢复项目依赖，可以执行：
-
-```text
-pip install -r requirements.txt
-```
-
-从而按照 requirements.txt 中记录的版本重新安装所需的软件包。
-
-## 3. 项目框架与数据链路
-
-### 3.1 项目框架
+### 2.1 项目框架
 
 ```text
 tiny-imu-gesture-recognition/
@@ -142,10 +55,10 @@ tiny-imu-gesture-recognition/
 | `.gitignore` | 指定 Git 不需要跟踪的本地文件和目录 |
 | `README.md` | 记录项目目标、实现过程、学习笔记和实验结果 |
 
-### 3.2 数据链路
+### 2.2 数据链路
 
 ```text
-手持 MPU6050（GY-521）完成指定手势
+手持 MPU6050 完成指定手势
         ↓
 MPU6050 采集 ax、ay、az、gx、gy、gz 六轴数据
         ↓ I²C
@@ -172,6 +85,114 @@ ESP32 端侧推理
 输出手势识别结果
 ```
 
+## 3. 开发环境配置
+
+ESP32 端主要负责：
+
+- 初始化 MPU6050
+- 通过 I²C 读取六轴数据
+- 按固定采样频率采集数据
+- 通过 USB 串口向 PC 发送数据
+
+PC 端 Python 主要负责：
+
+- 接收串口数据
+- 保存原始 CSV 数据
+- 信号预处理与特征分析
+- 模型训练与评估
+- 后续模型转换与部署
+
+### 3.1 ESP32 开发环境
+
+ESP32 负责通过 I²C 读取 MPU6050 数据，并通过 USB 串口发送至 PC，因此除了 PC 端的 Python 环境外，还需要配置 ESP32 固件开发环境。
+
+本项目使用 Arduino IDE 编写、编译并烧录 ESP32 固件。
+
+### 3.2 Python 虚拟环境
+
+不同 Python 项目可能依赖不同版本的软件包，如果将所有依赖都直接安装到系统 Python 中，随着项目数量的增加，可能出现版本冲突。因此为不同的项目创建独属于该项目的 Python 虚拟环境，使项目依赖相互隔离。
+
+当前项目的本地路径：
+
+```powershell
+D:\GitHub\tiny-imu-gesture-recognition
+```
+
+首先进入项目目录：
+
+```powershell
+cd D:\GitHub\tiny-imu-gesture-recognition
+```
+
+### 3.3 创建虚拟环境
+
+执行：
+
+```powershell
+python -m venv .venv
+```
+
+其中：
+
+- python：调用当前 Python 解释器
+- -m venv：运行 Python 自带的 venv 模块
+- .venv：虚拟环境目录名称
+
+执行后，项目根目录中会生成 `.venv/`，该目录保存当前项目独立的 Python 解释器和第三方依赖。
+
+### 3.4 激活虚拟环境
+
+Windows PowerShell 下执行：
+
+```powershell
+.\.venv\Scripts\Activate.ps1
+```
+
+激活成功后，终端前通常会出现 `(.venv)`，此后通过 pip 安装的软件包都会安装到当前项目的虚拟环境中。
+
+### 3.5 安装所需 Python 库
+
+项目第一阶段主要进行 IMU 数据读取、数值计算、信号处理与可视化，因此先安装以下 Python 库：
+
+```powershell
+pip install numpy pandas matplotlib scipy pyserial
+```
+
+各库的主要用途如下：
+
+| 库 | 主要用途 |
+| --- | --- |
+| NumPy | 数组、矩阵以及数值计算 |
+| Pandas | CSV 等结构化数据的读取与处理 |
+| Matplotlib | 绘制 IMU 时序波形、频谱和实验结果 |
+| SciPy | 滤波、FFT 等信号处理操作 |
+| PySerial | 接收 ESP32 通过串口发送的 IMU 数据 |
+
+后续进入传统机器学习、1D CNN、模型导出和端侧通信阶段时，再根据实际需要继续安装：
+
+- `scikit-learn`
+- `PyTorch`
+- `ONNX`
+- `ONNX Runtime`
+
+### 3.6 保存项目依赖
+
+为了记录当前项目使用的软件包及其版本，执行：
+
+```powershell
+pip freeze > requirements.txt
+```
+
+该命令会在项目根目录生成 `requirements.txt`，其中记录当前虚拟环境中已经安装的 Python 软件包及对应版本。
+
+以后如果需要在新的 Python 环境中恢复项目依赖，可以执行：
+
+```powershell
+pip install -r requirements.txt
+```
+
+从而按照 requirements.txt 中记录的版本重新安装所需的软件包。
+
 ## 4. IMU 信号获取与初步认识
 
 ### 4.1 什么是六轴 IMU
@@ -180,9 +201,48 @@ ESP32 端侧推理
 
 ### 4.2 六轴数据的含义
 
+MPU6050 输出三轴加速度和三轴角速度，共六个主要运动量：
+
+| 数据 | 含义 | 典型单位 |
+| --- | --- | --- |
+| `ax` | X 轴方向加速度 | g 或 m/s² |
+| `ay` | Y 轴方向加速度 | g 或 m/s² |
+| `az` | Z 轴方向加速度 | g 或 m/s² |
+| `gx` | 绕 X 轴旋转的角速度 | °/s |
+| `gy` | 绕 Y 轴旋转的角速度 | °/s |
+| `gz` | 绕 Z 轴旋转的角速度 | °/s |
+
+其中：
+
+- `ax`、`ay`、`az` 主要反映传感器的平移运动、振动以及重力在各坐标轴方向上的分量。
+- `gx`、`gy`、`gz` 主要反映传感器绕三个坐标轴旋转时的角速度变化。
+
+当 MPU6050 静止放置时，加速度计仍会受到重力影响，因此三个加速度轴中通常会有一个方向接近 `1 g`，具体取决于传感器当前的放置方向。
+
+在手势执行过程中，六个通道会随时间连续变化，因此一次手势可以表示为一段六通道时序数据：
+
+```text
+t1 → ax1, ay1, az1, gx1, gy1, gz1
+t2 → ax2, ay2, az2, gx2, gy2, gz2
+t3 → ax3, ay3, az3, gx3, gy3, gz3
+...
+tn → axn, ayn, azn, gxn, gyn, gzn
+```
+
+后续将利用这六路时序信号之间的变化规律区分不同手势。
+
 ### 4.3 MPU6050 与 ESP32 硬件连接
 
+| MPU6050 | ESP32 开发板 | 功能 |
+| --- | --- | --- | --- |
+| `VCC` | `3V3` | 模块供电 |
+| `GND` | `GND` | 公共地 |
+| `SDA` | `D21` | I²C 数据线 |
+| `SCL` | `D22` | I²C 时钟线 |
+
 ### 4.4 ESP32 读取 MPU6050 数据
+
+
 
 ### 4.5 串口数据格式
 
