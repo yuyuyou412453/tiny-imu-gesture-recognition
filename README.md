@@ -242,9 +242,238 @@ tn → axn, ayn, azn, gxn, gyn, gzn
 
 ### 4.4 ESP32 读取 MPU6050 数据
 
+在读取 MPU6050 数据之前，需要先在 Arduino IDE 中配置 ESP32 开发环境，并安装 MPU6050 对应的驱动库。
 
+首先在 Arduino IDE 的开发板管理器 `Boards Manager` 中搜索：
+
+```text
+esp32
+```
+
+安装：
+
+```text
+esp32 by Espressif Systems
+```
+
+本项目当前使用的 ESP32 Arduino Core 版本为：
+
+```text
+3.3.11
+```
+
+安装完成后，将开发板选择为：
+
+```text
+ESP32 Dev Module
+```
+
+然后在 Arduino IDE 的库管理器 `Library Manager` 中搜索：
+
+```text
+Adafruit MPU6050
+```
+
+安装：
+
+```text
+Adafruit MPU6050 by Adafruit
+```
+
+本项目当前使用的 Adafruit MPU6050 版本为：
+
+```text
+2.2.9
+```
+
+安装过程中如果提示安装依赖库，则一并安装，例如：
+
+```text
+Adafruit BusIO
+Adafruit Unified Sensor
+```
+
+完成 ESP32 开发板支持包和 MPU6050 库的安装后，即可开始通过 I²C 读取 MPU6050 数据。
+
+#### 4.4.1 检测 MPU6050 的 I²C 地址
+
+首先使用 I²C 扫描程序确认 ESP32 能够正常检测到 MPU6050。
+
+在 Arduino IDE 中新建程序：
+
+```cpp
+#include <Wire.h>  // 引入 Wire 库，用于 ESP32 的 I²C 通信
+
+void setup() {  // setup() 在 ESP32 上电或复位后只执行一次
+    Serial.begin(115200);  // 初始化串口通信，设置波特率为 115200
+
+    // SDA = GPIO21，SCL = GPIO22
+    Wire.begin(21, 22);  // 初始化 I²C，总线数据线使用 GPIO21，时钟线使用 GPIO22
+
+    delay(1000);  // 延时 1000 ms，等待系统初始化完成
+
+    Serial.println("I2C Scanner");  // 在串口监视器中输出 I2C Scanner
+}
+
+void loop() {  // loop() 中的程序会不断循环执行
+    byte error;  // 保存 I²C 通信返回的状态
+    byte address;  // 保存当前正在扫描的 I²C 地址
+    int deviceCount = 0;  // 记录本轮扫描检测到的 I²C 设备数量
+
+    Serial.println("Scanning...");  // 在串口监视器中提示开始扫描
+
+    for (address = 1; address < 127; address++) {  // 依次扫描 1～126 的 I²C 地址
+        Wire.beginTransmission(address);  // 尝试与当前地址上的 I²C 设备建立通信
+        error = Wire.endTransmission();  // 结束本次通信，并获取通信返回状态
+
+        if (error == 0) {  // 如果返回值为 0，说明当前地址存在正常响应的 I²C 设备
+            Serial.print("I2C device found at address 0x");  // 输出检测到设备的提示信息
+
+            if (address < 16) {  // 如果地址小于 0x10
+                Serial.print("0");  // 补一个 0，使地址按照两位十六进制形式显示
+            }
+
+            Serial.println(address, HEX);  // 以十六进制形式输出检测到的 I²C 地址
+            deviceCount++;  // 检测到的设备数量加 1
+        }
+    }
+
+    if (deviceCount == 0) {  // 如果本轮扫描没有检测到任何 I²C 设备
+        Serial.println("No I2C devices found.");  // 输出未检测到设备的提示信息
+    }
+
+    Serial.println();  // 输出空行，方便区分不同轮次的扫描结果
+
+    delay(3000);  // 延时 3000 ms，再开始下一轮扫描
+}
+```
+
+将程序编译并烧录到 ESP32 后，打开 Arduino IDE 的串口监视器，将波特率设置为：
+
+```text
+115200
+```
+
+正常情况下可以看到：
+
+```text
+Scanning...
+I2C device found at address 0x68
+```
+
+MPU6050 默认 I²C 地址通常为 `0x68`。检测到该地址说明 ESP32 与 MPU6050 的基本通信链路已经建立。
 
 ### 4.5 串口数据格式
+
+为了方便后续 Python 解析和 CSV 数据保存，本项目采用逗号分隔的串口数据格式，每一行表示一个采样时刻的数据：
+
+```text
+timestamp,ax,ay,az,gx,gy,gz
+```
+
+各字段含义如下：
+
+| 字段 | 含义 | 单位 |
+| --- | --- | --- |
+| `timestamp` | ESP32 启动后的时间 | ms |
+| `ax` | X 轴加速度 | g |
+| `ay` | Y 轴加速度 | g |
+| `az` | Z 轴加速度 | g |
+| `gx` | 绕 X 轴角速度 | °/s |
+| `gy` | 绕 Y 轴角速度 | °/s |
+| `gz` | 绕 Z 轴角速度 | °/s |
+
+相邻两组数据的时间戳间隔约为 `20 ms`，对应约 `50 Hz` 的采样频率。
+
+ESP32 使用以下程序读取 MPU6050 六轴数据，并按照上述格式通过串口输出：
+
+```cpp
+#include <Wire.h>                  // I²C 通信库
+#include <Adafruit_MPU6050.h>      // MPU6050 驱动库
+#include <Adafruit_Sensor.h>       // Adafruit 统一传感器接口库
+
+Adafruit_MPU6050 mpu;              // 创建 MPU6050 对象
+
+void setup()
+{
+    Serial.begin(115200);          // 初始化串口，波特率设置为 115200
+
+    Wire.begin(21, 22);            // 初始化 I²C：SDA = GPIO21，SCL = GPIO22
+
+    delay(1000);                   // 等待 MPU6050 上电稳定
+
+    if (!mpu.begin(0x68, &Wire))   // 尝试连接地址为 0x68 的 MPU6050
+    {
+        Serial.println("Failed to find MPU6050.");  // 输出 MPU6050 初始化失败提示
+
+        while (1)                  // 如果初始化失败，则停止程序继续运行
+        {
+            delay(10);             // 延时 10 ms
+        }
+    }
+
+    mpu.setAccelerometerRange(MPU6050_RANGE_4_G);  // 加速度量程设置为 ±4 g
+
+    mpu.setGyroRange(MPU6050_RANGE_500_DEG);       // 陀螺仪量程设置为 ±500 °/s
+
+    mpu.setFilterBandwidth(MPU6050_BAND_21_HZ);    // 数字低通滤波带宽设置为 21 Hz
+
+    delay(1000);                    // 等待传感器稳定
+}
+
+void loop()
+{
+    sensors_event_t a;              // 保存加速度计数据
+    sensors_event_t g;              // 保存陀螺仪数据
+    sensors_event_t temp;           // 保存温度数据
+
+    mpu.getEvent(&a, &g, &temp);    // 获取当前加速度、角速度和温度数据
+
+    unsigned long timestamp = millis();  // 获取 ESP32 启动后的时间，单位为 ms
+
+    float ax = a.acceleration.x / 9.80665;   // X 轴加速度：m/s² 转换为 g
+    float ay = a.acceleration.y / 9.80665;   // Y 轴加速度：m/s² 转换为 g
+    float az = a.acceleration.z / 9.80665;   // Z 轴加速度：m/s² 转换为 g
+
+    float gx = g.gyro.x * 180.0 / PI;        // X 轴角速度：rad/s 转换为 °/s
+    float gy = g.gyro.y * 180.0 / PI;        // Y 轴角速度：rad/s 转换为 °/s
+    float gz = g.gyro.z * 180.0 / PI;        // Z 轴角速度：rad/s 转换为 °/s
+
+    Serial.print(timestamp);         // 输出时间戳
+    Serial.print(",");               // 输出分隔符
+
+    Serial.print(ax, 4);             // 输出 X 轴加速度，保留 4 位小数
+    Serial.print(",");               // 输出分隔符
+
+    Serial.print(ay, 4);             // 输出 Y 轴加速度，保留 4 位小数
+    Serial.print(",");               // 输出分隔符
+
+    Serial.print(az, 4);             // 输出 Z 轴加速度，保留 4 位小数
+    Serial.print(",");               // 输出分隔符
+
+    Serial.print(gx, 4);             // 输出 X 轴角速度，保留 4 位小数
+    Serial.print(",");               // 输出分隔符
+
+    Serial.print(gy, 4);             // 输出 Y 轴角速度，保留 4 位小数
+    Serial.print(",");               // 输出分隔符
+
+    Serial.println(gz, 4);           // 输出 Z 轴角速度并换行
+
+    delay(20);                       // 约 50 Hz 采样
+}
+```
+
+将程序烧录到 ESP32 后，在串口监视器中可以连续观察到类似：
+
+```text
+1520,0.0123,-0.0184,0.9981,0.4271,-0.1924,0.0613
+1540,0.0131,-0.0179,0.9976,0.4018,-0.2057,0.0526
+1560,0.0147,-0.0201,1.0023,0.3894,-0.1812,0.0741
+```
+
+串口中只传输时间戳和六轴传感器数据，不直接传输手势标签。手势标签将在 PC 端采集数据时由 Python 程序根据当前指定的手势类别添加。
+
+这种格式便于 Python 使用逗号直接拆分各字段，并进一步保存为 CSV 文件。
 
 ### 4.6 Python 串口接收数据
 
