@@ -688,21 +688,42 @@ src\acquisition\serial_collector.py
 src/preprocessing/load_raw_data.py
 ```
 
-最终成功读取：
-
-```text
-left   20
-right  20
-up     20
-down   20
-still  20
-
-Total samples: 100
-```
-
-单个样本通常包含约 `91～92` 个采样点，读取后的数据可通过列名直接访问。
+最终成功读取，数据无丢失或明显离群特征。
 
 ### 5.2 原始六轴波形可视化
+
+为了直观观察不同手势下六轴 IMU 信号的变化规律，使用 Matplotlib 分别绘制三轴加速度和三轴角速度的原始时域波形。
+
+绘图程序保存在：
+
+```text
+src/preprocessing/plot_raw_signals.py
+```
+
+<p align="center">
+  <img src="assets/raw_signals/left_acc.png" width="48%">
+  <img src="assets/raw_signals/left_gyro.png" width="48%">
+</p>
+
+<p align="center">
+  <img src="assets/raw_signals/right_acc.png" width="48%">
+  <img src="assets/raw_signals/right_gyro.png" width="48%">
+</p>
+
+<p align="center">
+  <img src="assets/raw_signals/up_acc.png" width="48%">
+  <img src="assets/raw_signals/up_gyro.png" width="48%">
+</p>
+
+<p align="center">
+  <img src="assets/raw_signals/down_acc.png" width="48%">
+  <img src="assets/raw_signals/down_gyro.png" width="48%">
+</p>
+
+<p align="center">
+  <img src="assets/raw_signals/still_acc.png" width="48%">
+  <img src="assets/raw_signals/still_gyro.png" width="48%">
+</p>
 
 ### 5.3 数据异常与噪声分析
 
