@@ -738,14 +738,76 @@ src/preprocessing/plot_raw_signals.py
 
 ### 5.3 数据异常与噪声分析
 
-### 5.4 滤波处理
+为了检查原始数据质量，对全部 100 个样本进行批量统计分析。
 
-### 5.5 数据归一化
+分析程序保存在：
+
+```text
+src/preprocessing/analyze_raw_data.py
+```
+
+统计结果表明：
+
+```text
+缺失值：0
+样本长度：91～92 点
+典型采样间隔：22 ms
+最大采样间隔：44 ms
+```
+
+整体数据完整，仅存在极少量偶发采样间隔增大的情况。
+
+此外，不同类别之间存在一定的起始基线差异；`still` 类陀螺仪在静止状态下仍存在非零输出，说明传感器存在一定零偏和随机噪声。
+
+### 5.4 基线校正与滤波
+
+根据前述数据分析结果，对原始六轴 IMU 信号进行基线校正和低通滤波处理。
+
+处理程序保存在：
+
+```text
+src/preprocessing/preprocess_signals.py
+```
+
+首先使用每个样本前 `10` 个采样点的均值作为初始基线，并从对应通道中减去该基线，以减小初始姿态差异和陀螺仪零偏的影响。
+
+随后采用 `4 阶 Butterworth` 低通滤波器对六轴信号进行平滑处理，截止频率设置为 `8` Hz，用于抑制高频随机噪声。
+
+处理后的数据保存至：
+
+```text
+data/processed/
+```
+
+处理前后的代表波形对比如下：
+
+<p align="center">
+  <img src="assets/preprocessing_comparison/left_acc_comparison.png" width="48%">
+  <img src="assets/preprocessing_comparison/left_gyro_comparison.png" width="48%">
+</p>
+
+<p align="center">
+  <img src="assets/preprocessing_comparison/right_acc_comparison.png" width="48%">
+  <img src="assets/preprocessing_comparison/right_gyro_comparison.png" width="48%">
+</p>
+
+<p align="center">
+  <img src="assets/preprocessing_comparison/up_acc_comparison.png" width="48%">
+  <img src="assets/preprocessing_comparison/up_gyro_comparison.png" width="48%">
+</p>
+
+<p align="center">
+  <img src="assets/preprocessing_comparison/down_acc_comparison.png" width="48%">
+  <img src="assets/preprocessing_comparison/down_gyro_comparison.png" width="48%">
+</p>
+
+处理结果表明，基线偏移得到明显校正，高频波动得到一定抑制，同时主要手势变化趋势仍能够较好保留。
+
+### 5.5 数据集划分
 
 ### 5.6 滑动窗口分割
 
-### 5.7 数据集划分
-
+### 5.7 数据归一化
 
 ## 6. IMU 时域与频域特征分析
 
