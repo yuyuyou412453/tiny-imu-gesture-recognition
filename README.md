@@ -35,6 +35,17 @@ tiny-imu-gesture-recognition/
 │   ├── inference/
 │   └── deployment/
 ├── assets/
+|   └── raw_signals/
+|       ├── left_acc.png
+|       ├── left_gyro.png
+|       ├── right_acc.png
+|       ├── right_gyro.png
+|       ├── up_acc.png
+|       ├── up_gyro.png
+|       ├── down_acc.png
+|       ├── down_gyro.png
+|       ├── still_acc.png
+|       └── still_gyro.png
 ├── docs/
 ├── requirements.txt
 ├── .gitignore
