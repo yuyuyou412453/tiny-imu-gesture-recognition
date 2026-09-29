@@ -1003,6 +1003,46 @@ src/analysis/frequency_analysis.py
 
 ### 6.4 频域特征提取
 
+为了将频谱中的分布规律转换为可用于机器学习的数值特征，对每个样本的六个 IMU 通道分别提取基础频域特征。
+
+特征提取程序保存在：
+
+```text
+src/analysis/extract_frequency_features.py
+```
+
+每个通道提取：
+
+```text
+dominant_freq
+spectral_centroid
+spectral_entropy
+low_freq_ratio
+mid_freq_ratio
+```
+
+其中分别描述信号主频、频谱重心、频谱分散程度以及 `0.5～3` Hz 和 `3～8` Hz 范围内的能量占比。
+
+因此每个样本得到：
+
+```text
+6 个通道 × 5 个特征 = 30 个频域特征
+```
+
+最终生成：
+
+```text
+Train : 70 samples × 30 features
+Val   : 15 samples × 30 features
+Test  : 15 samples × 30 features
+```
+
+提取后的时域特征保存至：
+
+```text
+data/features/
+```
+
 ### 6.5 不同手势信号对比
 
 ## 7. 传统机器学习 Baseline
