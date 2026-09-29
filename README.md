@@ -829,13 +829,82 @@ data/split/
 
 其中训练集用于模型参数学习，验证集用于训练过程中的模型选择和参数调整，测试集仅用于最终性能评估。
 
-### 5.6 滑动窗口分割
+### 5.6 固定长度序列构建与数据归一化
 
-### 5.7 数据归一化
+由于每个 CSV 对应一次完整手势，且样本长度基本为 `91～92` 个采样点，因此将所有样本统一截取为前 `90` 个采样点，并保留 `ax、ay、az、gx、gy、gz` 六个通道。
+
+数据处理程序保存在：
+
+```text
+src/preprocessing/build_model_input.py
+```
+
+处理后单个样本尺寸为：
+
+```text
+90 × 6
+```
+
+最终数据尺寸为：
+
+```text
+Train : (70, 90, 6)
+Val   : (15, 90, 6)
+Test  : (15, 90, 6)
+```
+
+随后对六个通道进行标准化:
+
+```text
+x' = (x - mean) / std
+```
+
+其中均值和标准差仅由训练集计算，并使用同一组参数处理训练集、验证集和测试集，以避免数据泄漏。
+
+最终模型输入及归一化参数保存至：
+
+```text
+data/model_input/
+```
 
 ## 6. IMU 时域与频域特征分析
 
 ### 6.1 时域信号分析
+
+为了观察不同手势在时域中的整体变化规律，对训练集中每类 14 个样本的六轴信号分别求平均，并绘制平均时域波形。
+
+分析程序保存在：
+
+```text
+src/analysis/time_domain_analysis.py
+```
+
+<p align="center">
+  <img src="assets/time_domain/left_mean_acc.png" width="48%">
+  <img src="assets/time_domain/left_mean_gyro.png" width="48%">
+</p>
+
+<p align="center">
+  <img src="assets/time_domain/right_mean_acc.png" width="48%">
+  <img src="assets/time_domain/right_mean_gyro.png" width="48%">
+</p>
+
+<p align="center">
+  <img src="assets/time_domain/up_mean_acc.png" width="48%">
+  <img src="assets/time_domain/up_mean_gyro.png" width="48%">
+</p>
+
+<p align="center">
+  <img src="assets/time_domain/down_mean_acc.png" width="48%">
+  <img src="assets/time_domain/down_mean_gyro.png" width="48%">
+</p>
+
+<p align="center">
+  <img src="assets/time_domain/still_mean_acc.png" width="48%">
+  <img src="assets/time_domain/still_mean_gyro.png" width="48%">
+</p>
+
+平均波形表明，不同方向手势在各加速度轴和角速度轴上的变化趋势存在明显差异。其中 `left/right` 与 `up/down` 均表现出一定的方向相反特征，而 `still` 类六轴信号整体保持在 `0` 附近，为后续时域特征提取和手势分类提供了基础。
 
 ### 6.2 时域特征提取
 
