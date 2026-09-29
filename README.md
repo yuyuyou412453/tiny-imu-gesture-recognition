@@ -960,6 +960,47 @@ data/features/
 
 ### 6.3 频域分析与 FFT
 
+为了分析不同手势信号的主要频率成分，对训练集中每个样本的六轴信号分别进行快速傅里叶变换（FFT），并对同一类别样本的幅度谱求平均。
+
+频域分析程序保存在：
+
+```text
+src/analysis/frequency_analysis.py
+```
+
+在进行 FFT 前，先去除各通道的直流分量。根据实际采样频率约 45.45 Hz 和固定序列长度 90，频率分辨率约为：
+
+```text
+Δf ≈ 45.45 / 90 ≈ 0.505 Hz
+```
+
+<p align="center">
+  <img src="assets/frequency_domain/left_spectrum_acc.png" width="48%">
+  <img src="assets/frequency_domain/left_spectrum_gyro.png" width="48%">
+</p>
+
+<p align="center">
+  <img src="assets/frequency_domain/right_spectrum_acc.png" width="48%">
+  <img src="assets/frequency_domain/right_spectrum_gyro.png" width="48%">
+</p>
+
+<p align="center">
+  <img src="assets/frequency_domain/up_spectrum_acc.png" width="48%">
+  <img src="assets/frequency_domain/up_spectrum_gyro.png" width="48%">
+</p>
+
+<p align="center">
+  <img src="assets/frequency_domain/down_spectrum_acc.png" width="48%">
+  <img src="assets/frequency_domain/down_spectrum_gyro.png" width="48%">
+</p>
+
+<p align="center">
+  <img src="assets/frequency_domain/still_spectrum_acc.png" width="48%">
+  <img src="assets/frequency_domain/still_spectrum_gyro.png" width="48%">
+</p>
+
+频谱结果表明，动态手势的主要能量集中在低频区域，其中 0.5～3 Hz 附近较为明显，而 8 Hz 以上频率成分已经明显衰减。不同手势在各加速度轴和角速度轴上的频谱幅值分布存在差异。
+
 ### 6.4 频域特征提取
 
 ### 6.5 不同手势信号对比
@@ -977,7 +1018,6 @@ data/features/
 ### 7.5 模型测试与评估
 
 ### 7.6 混淆矩阵与结果分析
-
 
 ## 8. 轻量 1D CNN 手势识别
 
